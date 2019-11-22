@@ -12,17 +12,16 @@
   <div>
     <div style="display: flex;justify-content: flex-start">
       <el-input
-        placeholder="通过标题搜索该分类下的博客..."
+        placeholder="通过标题搜索该分类下的CMS..."
         prefix-icon="el-icon-search"
-        v-model="keywords" style="width: 400px" size="mini">
+        v-model.trim="keywords" style="width: 400px" size="mini">
       </el-input>
       <el-button type="primary" icon="el-icon-search" size="mini" style="margin-left: 3px" @click="searchClick">搜索
       </el-button>
     </div>
-    <!--<div style="width: 100%;height: 1px;background-color: #20a0ff;margin-top: 8px;margin-bottom: 0px"></div>-->
     <el-table
       ref="multipleTable"
-      :data="articles"
+      :data="cmss"
       tooltip-effect="dark"
       style="width: 100%;overflow-x: hidden; overflow-y: hidden;"
       max-height="390"
@@ -38,18 +37,20 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="最近编辑时间" width="140" align="left">
-        <template slot-scope="scope">{{ scope.row.editTime | formatDateTime}}</template>
+        label="发布时间" width="140" align="left">
+        <template slot-scope="scope">{{ scope.row.releaseDate | formatDate}}</template>
       </el-table-column>
       <el-table-column
         prop="nickname"
-        label="作者"
+        label="文章来源"
         width="120" align="left">
+        <template slot-scope="scope">{{ scope.row.articleSource}}</template>
       </el-table-column>
       <el-table-column
-        prop="cateName"
+        prop="cmsTypeName"
         label="所属分类"
         width="120" align="left">
+        <template slot-scope="scope" >{{ scope.row.cmsTypeName }}</template>
       </el-table-column>
       <el-table-column label="操作" align="left" v-if="showEdit || showDelete">
         <template slot-scope="scope">
@@ -70,7 +71,7 @@
       </el-table-column>
     </el-table>
     <div class="blog_table_footer">
-      <el-button type="danger" size="mini" style="margin: 0px;" v-show="this.articles.length>0 && showDelete"
+      <el-button type="danger" size="mini" style="margin: 0px;" v-show="this.cmss.length>0 && showDelete"
                  :disabled="this.selItems.length==0" @click="deleteMany">批量删除
       </el-button>
       <span></span>
@@ -78,7 +79,7 @@
         background
         :page-size="pageSize"
         layout="prev, pager, next"
-        :total="totalCount" @current-change="currentChange" v-show="this.articles.length>0">
+        :total="totalCount" @current-change="currentChange" v-show="this.cmss.length>0">
       </el-pagination>
     </div>
   </div>
@@ -93,7 +94,8 @@
   export default{
     data() {
       return {
-        articles: [],
+        cmsTypeParents: [],
+        cmss: [],
         selItems: [],
         loading: false,
         currentPage: 1,
@@ -118,7 +120,7 @@
         this.loadBlogs(1, this.pageSize);
       },
       itemClick(row){
-        this.$router.push({path: '/blogDetail', query: {aid: row.id}})
+        this.$router.push({path: '/blogDetail', query: {id: row.id}})
       },
       deleteMany(){
         var selItems = this.selItems;
@@ -134,18 +136,12 @@
         this.loadBlogs(currentPage, this.pageSize);
       },
       loadBlogs(page, count){
-        var _this = this;
-        var url = '';
-        if (this.state == -2) {
-          url = "/admin/article/all" + "?page=" + page + "&count=" + count + "&keywords=" + this.keywords;
-        } else {
-          url = "/article/all?state=" + this.state + "&page=" + page + "&count=" + count + "&keywords=" + this.keywords;
-        }
-        getRequest(url).then(resp=> {
+        let _this = this;
+        getRequest("/cms/all", {"keywords":this.keywords, "pageNum":page, "pageSize":count}).then(resp=> {
           _this.loading = false;
           if (resp.status == 200) {
-            _this.articles = resp.data.articles;
-            _this.totalCount = resp.data.totalCount;
+            _this.cmss = resp.data.data.list;
+            _this.totalCount = resp.data.data.total;
           } else {
             _this.$message({type: 'error', message: '数据加载失败!'});
           }
@@ -166,7 +162,7 @@
         this.selItems = val;
       },
       handleEdit(index, row) {
-        this.$router.push({path: '/editBlog', query: {from: this.activeName,id:row.id}});
+        this.$router.push({path: '/editBlog', query: {id: row.id}});
       },
       handleDelete(index, row) {
         this.dustbinData.push(row.id);

@@ -1,27 +1,12 @@
 <template>
   <el-container v-loading="loading" class="post-article">
     <el-header class="header">
-      <el-select v-model="article.cid" placeholder="请选择父栏目" style="width: 150px;">
-        <el-option
-          v-for="item in categories"
-          :key="item.id"
-          :label="item.cateName"
-          :value="item.id">
-        </el-option>
-      </el-select>
-      <el-select v-model="article.cid" placeholder="请选择子栏目" style="width: 150px;margin-left: 10px">
-        <el-option
-          v-for="item in categories"
-          :key="item.id"
-          :label="item.cateName"
-          :value="item.id">
-        </el-option>
-      </el-select>
-      <el-date-picker v-model="date" type="date" placeholder="请选择发布日期" style="margin-left: 10px;width: 10%;"></el-date-picker>
-      <el-input v-model="article.title" placeholder="请输入文章来源" style="width: 300px;margin-left: 10px;margin-right: 10px;">
+      <el-cascader v-model="cmsDetail.cmsTypeId" :props="defaultParams" :options="options" placeholder="请选择CMS类型" clearable></el-cascader>
+      <el-date-picker v-model="cmsDetail.releaseDate" type="date" placeholder="请选择发布日期" style="margin-left: 10px;width: 10%;"></el-date-picker>
+      <el-input v-model="cmsDetail.articleSource" placeholder="请输入文章来源" style="width: 300px;margin-left: 10px;margin-right: 10px;">
         <template slot="prepend">文章来源</template>
       </el-input>
-      <el-input v-model="article.title" placeholder="请输入文章标题" style="width: 400px;margin-left: 10px;margin-right: 10px;">
+      <el-input v-model="cmsDetail.title" placeholder="请输入文章标题" style="width: 400px;margin-left: 10px;margin-right: 10px;">
         <template slot="prepend">文章标题</template>
       </el-input>
       <el-button type="primary" @click="saveBlog(1)">发表文章</el-button>
@@ -41,10 +26,10 @@
           <img width="100%" :src="dialogImageUrl" alt="">
         </el-dialog>
         <el-tag style="float: left;margin-left: 20px;">文章简述：</el-tag>
-        <el-input style="float: left;width: 30%;padding-bottom: 12px;margin-left: 5px;" type="textarea" rows="6" v-model="article.title" placeholder="请输入文章简述"></el-input>
+        <el-input style="float: left;width: 30%;padding-bottom: 12px;margin-left: 5px;" type="textarea" rows="6" v-model="cmsDetail.remark" placeholder="请输入文章简述"></el-input>
       </div>
     </div>
-    <el-divider style="border-bottom: #2c3e50 0.5px dashed;padding-top: 10px;background-color: #ECECEC;"></el-divider>
+    <div style="background-color: #ECECEC"><el-divider style="border-bottom: #2c3e50 0.5px dashed;padding-top: 10px;background-color: #ECECEC;"></el-divider></div>
     <div style="background-color: #ECECEC;">
       <div style="width:50%; float: left;">
         <h2>新增文章</h2>
@@ -59,10 +44,11 @@
 
           <el-upload
             id="img-upload"
-            action="https://httpbin.org/post"
             :multiple="false"
+            action="string"
+            :before-upload="beforeUpload"
+            :http-request="uploadImage"
             :show-file-list="false"
-            :on-success="richUploadSuccess"
             style="height: 0px;">
           </el-upload>
           <div id="quill-editor" ref="quill-editor"></div>
@@ -73,20 +59,17 @@
         </div>
 
         <div style="width:50%; float: left;">
-          <div class="ql-editor" v-html="content"></div>
+          <div class="ql-editor" v-html="this.cmsDetail.contentHtml"></div>
         </div>
       </div>
     </el-main>
   </el-container>
 </template>
 <script>
-  import {postRequest} from '../utils/api'
+  import {base, postRequest, putRequest, uploadFileRequest} from '../utils/api'
   import {getRequest} from '../utils/api'
   // Local Registration
-  import {mavonEditor} from 'mavon-editor'
-  // 可以通过 mavonEditor.markdownIt 获取解析器markdown-it对象
-  import 'mavon-editor/dist/css/index.css'
-  import {isNotNullORBlank} from '../utils/utils'
+  import {formatDate, isNotNullORBlank} from '../utils/utils'
 
   import Quill from 'quill'
   import ImageResize from 'quill-image-resize-module'
@@ -98,18 +81,17 @@
   export default {
     mounted: function () {
       this.getCategories();
-      var from = this.$route.query.from;
-      this.from = from;
-      var _this = this;
-      if (from != null && from != '' && from != undefined) {
-        var id = this.$route.query.id;
-        this.id = id;
+      let query = this.$route.query;
+      let _this = this;
+      if (query && query.id) {
         this.loading = true;
-        getRequest("/article/" + id).then(resp=> {
+        getRequest("/cms/" + query.id).then(resp=> {
           _this.loading = false;
+          console.log("resp========", resp)
           if (resp.status == 200) {
-            _this.article = resp.data;
-            var tags = resp.data.tags;
+            _this.cmsDetail = resp.data.data;
+            // 获取富文本内容
+            document.querySelector('#quill-editor').children[0].innerHTML = _this.cmsDetail.contentHtml
           } else {
             _this.$message({type: 'error', message: '页面加载失败!'})
           }
@@ -119,78 +101,78 @@
         })
       }
 
-      this.initQuill()
+      this.initQuill();
+
     },
     components: {
-      mavonEditor
     },
     methods: {
       saveBlog(state){
-        if (!(isNotNullORBlank(this.article.title, this.article.mdContent, this.article.cid))) {
+        if (!(isNotNullORBlank(this.cmsDetail.title, this.cmsDetail.contentHtml, this.cmsDetail.cmsTypeId))) {
           this.$message({type: 'error', message: '数据不能为空!'});
           return;
         }
-        var _this = this;
+        let _this = this;
         _this.loading = true;
-        postRequest("/article/", {
-          id: _this.article.id,
-          title: _this.article.title,
-          mdContent: _this.article.mdContent,
-          htmlContent: _this.$refs.md.d_render,
-          cid: _this.article.cid,
-          state: state
-        }).then(resp=> {
-          _this.loading = false;
-          if (resp.status == 200 && resp.data.status == 'success') {
-            _this.article.id = resp.data.msg;
-            _this.$message({type: 'success', message: state == 0 ? '保存成功!' : '发布成功!'});
-//            if (_this.from != undefined) {
-            window.bus.$emit('blogTableReload')
-//            }
-            if (state == 1) {
+        if(_this.cmsDetail.id && _this.cmsDetail.id > 0){
+          putRequest("/cms/", {
+            id: _this.cmsDetail.id,
+            title: _this.cmsDetail.title,
+            remark: _this.cmsDetail.remark,
+            releaseDate: new Date(_this.cmsDetail.releaseDate),
+            articleSource: _this.cmsDetail.articleSource,
+            contentHtml: _this.cmsDetail.contentHtml,
+            imgUrl1: _this.cmsDetail.imgUrl1,
+            imgUrl2: _this.cmsDetail.imgUrl2,
+            imgUrl3: _this.cmsDetail.imgUrl3,
+            imgUrl4: _this.cmsDetail.imgUrl4,
+            cmsTypeId: parseInt(_this.cmsDetail.cmsTypeId)
+          }).then(resp=> {
+            _this.loading = false;
+            if (resp.status == 200 && resp.data.status == 'success') {
+              _this.$message({type: 'success', message: resp.data.msg});
+              window.bus.$emit('blogTableReload')
               _this.$router.replace({path: '/articleList'});
             }
-          }
-        }, resp=> {
-          _this.loading = false;
-          _this.$message({type: 'error', message: state == 0 ? '保存草稿失败!' : '博客发布失败!'});
-        })
+          }, resp=> {
+            _this.loading = false;
+            _this.$message({type: 'error', message: resp.data.msg});
+          })
+        } else {
+          postRequest("/cms/", {
+            title: _this.cmsDetail.title,
+            remark: _this.cmsDetail.remark,
+            releaseDate: _this.cmsDetail.releaseDate,
+            articleSource: _this.cmsDetail.articleSource,
+            contentHtml: _this.cmsDetail.contentHtml,
+            imgUrl1: _this.cmsDetail.imgUrl1,
+            imgUrl2: _this.cmsDetail.imgUrl2,
+            imgUrl3: _this.cmsDetail.imgUrl3,
+            imgUrl4: _this.cmsDetail.imgUrl4,
+            cmsTypeId: parseInt(_this.cmsDetail.cmsTypeId)
+          }).then(resp=> {
+            _this.loading = false;
+            if (resp.status == 200 && resp.data.status == 'success') {
+              _this.$message({type: 'success', message: resp.data.msg});
+              window.bus.$emit('blogTableReload')
+              _this.$router.replace({path: '/articleList'});
+            }
+          }, resp=> {
+            _this.loading = false;
+            _this.$message({type: 'error', message: resp.data.msg});
+          })
+        }
       },
       getCategories(){
         let _this = this;
-        getRequest("/admin/category/all").then(resp=> {
-          _this.categories = resp.data;
+        getRequest("/admin/cms/cascader").then(resp=> {
+          this.options = resp.data.data;
         });
       },
 
 
-
-
-      // 富文本中的图片上传
-      richUploadSuccess(response, file, fileList) {
-        /**
-         * 如果上传成功
-         * ps：不同的上传接口，判断是否成功的标志也不一样，需要看后端的返回
-         * 通常情况下，应该有返回上传的结果状态（是否上传成功）
-         * 以及，图片上传成功后的路径
-         * 将路径赋值给 imgUrl
-         */
-        if(response.files.file) {
-          let imgUrl = response.files.file
-          // 获取光标所在位置
-          let length = this.quill.getSelection().index
-          // 插入图片，res为服务器返回的图片链接地址
-          this.quill.insertEmbed(length, 'image', imgUrl)
-          // 调整光标到最后
-          this.quill.setSelection(length + 1)
-        } else {
-          // 提示信息，需引入Message
-          this.$message.error('图片插入失败')
-        }
-      },
       onEditorChange(eventName, ...args) {
         if(eventName === 'text-change') {
-          // args[0] will be delta
           // 获取富文本内容
           this.content = document.querySelector('#quill-editor').children[0].innerHTML
         } else if (eventName === 'selection-change') {
@@ -268,38 +250,85 @@
         this.dialogImageUrl = file.url;
         this.dialogVisible = true;
       },
-      imgPreview(file) {
+      beforeUpload(file) {
         let fileName = file.name;
         let regex = /(.jpg|.jpeg|.gif|.png|.bmp)$/;
         if (regex.test(fileName.toLowerCase())) {
-          // this.formMovie.posterURL = file.url;
+          console.log("图片文件", fileName)
         } else {
           this.$message.error('请选择图片文件');
         }
       },
+
+
+      // 富文本中的图片上传
+      uploadImage(param){
+        let fd = new FormData();
+        console.log('param.file',param.file)
+        fd.append('file', param.file); // 要提交给后台的文件
+        uploadFileRequest("/admin/cms/upload", fd).then(resp => { // UploadFiles 是封装的接口
+          /**
+           * 如果上传成功
+           * ps：不同的上传接口，判断是否成功的标志也不一样，需要看后端的返回
+           * 通常情况下，应该有返回上传的结果状态（是否上传成功）
+           * 以及，图片上传成功后的路径
+           * 将路径赋值给 imgUrl
+           */
+          if(resp.data.data) {
+            let imgUrl = resp.data.data
+            // 获取光标所在位置
+            let length = this.quill.getSelection().index
+            // 插入图片，res为服务器返回的图片链接地址
+            this.quill.insertEmbed(length, 'image', imgUrl)
+            // 调整光标到最后
+            this.quill.setSelection(length + 1)
+          } else {
+            // 提示信息，需引入Message
+            this.$message.error('图片插入失败')
+          }
+        })
+      },
+
+
       uploadChange(file, fileList){
         this.hideUpload = fileList.length >= this.limitCount;
       }
     },
     data() {
       return {
-        categories: [],
+        options: [],
+        cmsTypeParents: [],
+        cmsTypeChilds: [],
+        editId: '',
+        // cms类型父id
+        parentId: '',
         loading: false,
-        from: '',
-        article: {
-          id: '-1',
+        cmsDetail: {
+          id: -1,
           title: '',
-          mdContent: '',
-          cid: ''
+          remark: '',
+          releaseDate: '',
+          articleSource: '',
+          contentHtml: '',
+          imgUrl1: '',
+          imgUrl2: '',
+          imgUrl3: '',
+          imgUrl4: '',
+          cmsTypeId: null
+        },
+        defaultParams: {
+          label: 'name',
+          value: 'id',
+          children: 'children',
+          emitPath: false
         },
 
-        // 富文本内容
-        content: '',
+        // ================富文本属性======================
+        // 最大字数
         richMaxLength: 999999999,
         richCurrentLength: 0,
 
-        date:'',
-
+        // ================上传图片属性======================
         dialogImageUrl: '',
         dialogVisible: false,
         hideUpload: false,

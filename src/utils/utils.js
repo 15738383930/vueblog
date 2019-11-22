@@ -7,8 +7,8 @@ export const isNotNullORBlank = (...args)=> {
   }
   return true;
 }
-export function formatDate (date, fmt) {
-  fmt = fmt ? fmt : "yyyy-MM-dd";
+export function formatDateTime (date, fmt) {
+  fmt = "yyyy-MM-dd HH:mm:ss";
   if (/(y+)/.test(fmt)) {
     fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length));
   }
@@ -18,6 +18,24 @@ export function formatDate (date, fmt) {
     'h+': date.getHours(),
     'm+': date.getMinutes(),
     's+': date.getSeconds()
+  };
+  for (let k in o) {
+    if (new RegExp(`(${k})`).test(fmt)) {
+      let str = o[k] + '';
+      fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? str : padLeftZero(str));
+    }
+  }
+  return fmt;
+};
+
+export function formatDate (date, fmt) {
+  fmt = "yyyy-MM-dd";
+  if (/(y+)/.test(fmt)) {
+    fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length));
+  }
+  let o = {
+    'M+': date.getMonth() + 1,
+    'd+': date.getDate()
   };
   for (let k in o) {
     if (new RegExp(`(${k})`).test(fmt)) {

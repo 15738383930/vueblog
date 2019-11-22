@@ -45,7 +45,7 @@ export default new Router({
           }
         }, {
           path: '/blogDetail',
-          name: '博客详情',
+          name: 'CMS详情',
           component: BlogDetail,
           hidden: true,
           meta: {
@@ -53,7 +53,7 @@ export default new Router({
           }
         }, {
           path: '/editBlog',
-          name: '编辑博客',
+          name: '编辑CMS',
           component: PostArticle,
           hidden: true,
           meta: {
