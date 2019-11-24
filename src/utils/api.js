@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 let base = '';
-export const postRequest = (url, params) => {
+export const postRequest = (url, params, header) => {
+  header = header ? header == "JSON" ?  "'Content-Type': 'application/json'" : "'Content-Type': 'application/x-www-form-urlencoded'" : "'Content-Type': 'application/x-www-form-urlencoded'";
   return axios({
     method: 'post',
     url: `${base}${url}`,
@@ -14,9 +15,7 @@ export const postRequest = (url, params) => {
       }
       return ret
     }],
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
+    headers: { header }
   });
 }
 export const uploadFileRequest = (url, params) => {
@@ -29,21 +28,26 @@ export const uploadFileRequest = (url, params) => {
     }
   });
 }
-export const putRequest = (url, params) => {
+
+export const putRequest = (url, params, header) => {
+  header = header ? header == "JSON" ?  "'Content-Type': 'application/json'" : "'Content-Type': 'application/x-www-form-urlencoded'" : "'Content-Type': 'application/x-www-form-urlencoded'";
+  console.log("header=============", header)
   return axios({
     method: 'put',
     url: `${base}${url}`,
     data: params,
     transformRequest: [function (data) {
-      let ret = ''
-      for (let it in data) {
-        ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
+      if(header != "JSON"){
+        let ret = ''
+        for (let it in data) {
+          ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
+        }
+        return ret
+      } else{
+        return JSON.stringify(data);
       }
-      return ret
     }],
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
+    headers: { header }
   });
 }
 export const deleteRequest = (url) => {

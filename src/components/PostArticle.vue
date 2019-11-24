@@ -9,16 +9,18 @@
       <el-input v-model="cmsDetail.title" placeholder="请输入文章标题" style="width: 400px;margin-left: 10px;margin-right: 10px;">
         <template slot="prepend">文章标题</template>
       </el-input>
-      <el-button type="primary" @click="saveBlog(1)">发表文章</el-button>
+      <el-button type="primary" @click="saveBlog()">发表文章</el-button>
     </el-header>
     <div style="padding-top: 5px;background-color: #ECECEC;">
       <div style="width:100%;float: left;padding-left: 5px;display:flex;align-items:center;">
         <el-tag style="float: left;">图片：</el-tag>
-        <el-upload style="float: left;padding-left: 5px;":class="{hide:hideUpload}" action="#" list-type="picture-card"
+        <el-upload style="float: left;padding-left: 5px;":class="{hide:hideUpload}" action="string"
+                   list-type="picture-card"
+                   :file-list="imageUrls"
                    :on-preview="handlePictureCardPreview"
-                   :auto-upload="false"
                    :on-change="uploadChange"
-                   :on-remove="handleRemove"
+                   :http-request="cmsUploadImage"
+                   :on-remove="cmsRemoveImage"
         >
           <i class="el-icon-plus"></i>
         </el-upload>
@@ -26,7 +28,7 @@
           <img width="100%" :src="dialogImageUrl" alt="">
         </el-dialog>
         <el-tag style="float: left;margin-left: 20px;">文章简述：</el-tag>
-        <el-input style="float: left;width: 30%;padding-bottom: 12px;margin-left: 5px;" type="textarea" rows="6" v-model="cmsDetail.remark" placeholder="请输入文章简述"></el-input>
+        <el-input style="float: left;width: 30%;margin-left: 5px;" type="textarea" rows="6" v-model="cmsDetail.remark" placeholder="请输入文章简述"></el-input>
       </div>
     </div>
     <div style="background-color: #ECECEC"><el-divider style="border-bottom: #2c3e50 0.5px dashed;padding-top: 10px;background-color: #ECECEC;"></el-divider></div>
@@ -59,7 +61,7 @@
         </div>
 
         <div style="width:50%; float: left;">
-          <div class="ql-editor" v-html="this.cmsDetail.contentHtml"></div>
+          <div class="ql-editor" v-html="cmsDetail.contentHtml"></div>
         </div>
       </div>
     </el-main>
@@ -89,7 +91,10 @@
           _this.loading = false;
           console.log("resp========", resp)
           if (resp.status == 200) {
-            _this.cmsDetail = resp.data.data;
+            _this.cmsDetail = resp.data.data.cmsDetail;
+            _this.imageUrls = resp.data.data.imag;
+              console.log("cmsDetail========", _this.cmsDetail)
+              console.log("imageUrls========", _this.imageUrls)
             // 获取富文本内容
             document.querySelector('#quill-editor').children[0].innerHTML = _this.cmsDetail.contentHtml
           } else {
@@ -107,7 +112,7 @@
     components: {
     },
     methods: {
-      saveBlog(state){
+      saveBlog(){
         if (!(isNotNullORBlank(this.cmsDetail.title, this.cmsDetail.contentHtml, this.cmsDetail.cmsTypeId))) {
           this.$message({type: 'error', message: '数据不能为空!'});
           return;
@@ -116,18 +121,8 @@
         _this.loading = true;
         if(_this.cmsDetail.id && _this.cmsDetail.id > 0){
           putRequest("/cms/", {
-            id: _this.cmsDetail.id,
-            title: _this.cmsDetail.title,
-            remark: _this.cmsDetail.remark,
-            releaseDate: new Date(_this.cmsDetail.releaseDate),
-            articleSource: _this.cmsDetail.articleSource,
-            contentHtml: _this.cmsDetail.contentHtml,
-            imgUrl1: _this.cmsDetail.imgUrl1,
-            imgUrl2: _this.cmsDetail.imgUrl2,
-            imgUrl3: _this.cmsDetail.imgUrl3,
-            imgUrl4: _this.cmsDetail.imgUrl4,
-            cmsTypeId: parseInt(_this.cmsDetail.cmsTypeId)
-          }).then(resp=> {
+              cmsDetail: _this.cmsDetail,
+              imageUrls: _this.imageUrls}, "JSON").then(resp=> {
             _this.loading = false;
             if (resp.status == 200 && resp.data.status == 'success') {
               _this.$message({type: 'success', message: resp.data.msg});
@@ -139,18 +134,8 @@
             _this.$message({type: 'error', message: resp.data.msg});
           })
         } else {
-          postRequest("/cms/", {
-            title: _this.cmsDetail.title,
-            remark: _this.cmsDetail.remark,
-            releaseDate: _this.cmsDetail.releaseDate,
-            articleSource: _this.cmsDetail.articleSource,
-            contentHtml: _this.cmsDetail.contentHtml,
-            imgUrl1: _this.cmsDetail.imgUrl1,
-            imgUrl2: _this.cmsDetail.imgUrl2,
-            imgUrl3: _this.cmsDetail.imgUrl3,
-            imgUrl4: _this.cmsDetail.imgUrl4,
-            cmsTypeId: parseInt(_this.cmsDetail.cmsTypeId)
-          }).then(resp=> {
+            _this.cmsDetail.id = null;
+          postRequest("/cms/", {cmsDetail: _this.cmsDetail, imageUrls: _this.imageUrls}).then(resp=> {
             _this.loading = false;
             if (resp.status == 200 && resp.data.status == 'success') {
               _this.$message({type: 'success', message: resp.data.msg});
@@ -174,7 +159,7 @@
       onEditorChange(eventName, ...args) {
         if(eventName === 'text-change') {
           // 获取富文本内容
-          this.content = document.querySelector('#quill-editor').children[0].innerHTML
+          this.cmsDetail.contentHtml = document.querySelector('#quill-editor').children[0].innerHTML
         } else if (eventName === 'selection-change') {
           // args[0] will be old range
         }
@@ -243,9 +228,6 @@
          */
         quill.on('editor-change', this.onEditorChange)
       },
-      handleRemove(file, fileList) {
-        this.hideUpload = fileList.length >= this.limitCount;
-      },
       handlePictureCardPreview(file) {
         this.dialogImageUrl = file.url;
         this.dialogVisible = true;
@@ -264,7 +246,6 @@
       // 富文本中的图片上传
       uploadImage(param){
         let fd = new FormData();
-        console.log('param.file',param.file)
         fd.append('file', param.file); // 要提交给后台的文件
         uploadFileRequest("/admin/cms/upload", fd).then(resp => { // UploadFiles 是封装的接口
           /**
@@ -275,20 +256,57 @@
            * 将路径赋值给 imgUrl
            */
           if(resp.data.data) {
-            let imgUrl = resp.data.data
+            let imgUrl = resp.data.data;
             // 获取光标所在位置
-            let length = this.quill.getSelection().index
+            let length = this.quill.getSelection().index;
             // 插入图片，res为服务器返回的图片链接地址
-            this.quill.insertEmbed(length, 'image', imgUrl)
+            this.quill.insertEmbed(length, 'image', imgUrl);
             // 调整光标到最后
             this.quill.setSelection(length + 1)
           } else {
             // 提示信息，需引入Message
-            this.$message.error('图片插入失败')
+            this.$message.error(resp.data.msg)
           }
         })
       },
 
+      // 文章图片上传
+      cmsUploadImage(param){
+        let _this = this;
+          let fd = new FormData();
+          fd.append('file', param.file); // 要提交给后台的文件
+          uploadFileRequest("/admin/cms/upload", fd).then(resp => { // UploadFiles 是封装的接口
+              /**
+               * 如果上传成功
+               * ps：不同的上传接口，判断是否成功的标志也不一样，需要看后端的返回
+               * 通常情况下，应该有返回上传的结果状态（是否上传成功）
+               * 以及，图片上传成功后的路径
+               * 将路径赋值给 imgUrl
+               */
+              if(resp.data.data) {
+                  // 上传后的服务器图片路径
+                  let imgUrl = resp.data.data;
+                  _this.imageUrls.push(imgUrl);
+              } else {
+                  // 提示信息，需引入Message
+                  _this.$message.error(resp.data.msg)
+              }
+          })
+      },
+
+      // 文章图片删除
+      cmsRemoveImage(file, fileList){
+          let _this = this;
+          getRequest("/admin/cms/remove/" + file.name).then(resp => { // UploadFiles 是封装的接口
+              if(resp.data.status === 200) {
+                  _this.imageUrls = fileList.length === 0 ? [] : fileList.forEach(item => { _this.imageUrls.push(item.url); });
+                  this.hideUpload = fileList.length >= this.limitCount;
+              } else {
+                  // 提示信息，需引入Message
+                  _this.$message.error(resp.data.msg)
+              }
+          })
+      },
 
       uploadChange(file, fileList){
         this.hideUpload = fileList.length >= this.limitCount;
@@ -304,18 +322,16 @@
         parentId: '',
         loading: false,
         cmsDetail: {
-          id: -1,
-          title: '',
-          remark: '',
-          releaseDate: '',
-          articleSource: '',
-          contentHtml: '',
-          imgUrl1: '',
-          imgUrl2: '',
-          imgUrl3: '',
-          imgUrl4: '',
-          cmsTypeId: null
+            id: -1,
+            title: '',
+            remark: '',
+            releaseDate: '',
+            articleSource: '',
+            contentHtml: '',
+            imgUrls: '',
+            cmsTypeId: -1
         },
+        imageUrls: [],
         defaultParams: {
           label: 'name',
           value: 'id',
