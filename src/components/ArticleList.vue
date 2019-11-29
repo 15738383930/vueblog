@@ -5,7 +5,7 @@
         <el-tab-pane label="全部文章" name="post">
           <blog_table state="1" :showEdit="true" :showDelete="true" :showRestore="false" :activeName="activeName"></blog_table>
         </el-tab-pane>
-        <el-tab-pane label="回收站" name="dustbin">
+        <el-tab-pane label="回收站" name="dustbin" v-if="isAdmin">
           <blog_table state="2" :showEdit="false" :showDelete="true" :showRestore="true" :activeName="activeName"></blog_table>
         </el-tab-pane>
       </el-tabs>
@@ -33,7 +33,7 @@
     },
     methods: {
       handleClick(tab, event) {
-//        console.log(tab, event);
+        // console.log("name===========", tab.name);
       }
     },
     components: {

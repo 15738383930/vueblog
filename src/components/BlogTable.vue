@@ -109,7 +109,6 @@
       var _this = this;
       this.loading = true;
       this.loadBlogs(1, this.pageSize);
-      var _this = this;
       window.bus.$on('blogTableReload', function () {
         _this.loading = true;
         _this.loadBlogs(_this.currentPage, _this.pageSize);
@@ -123,11 +122,12 @@
         this.$router.push({path: '/blogDetail', query: {id: row.id}})
       },
       deleteMany(){
-        var selItems = this.selItems;
+        let _this = this;
+        var selItems = _this.selItems;
         for (var i = 0; i < selItems.length; i++) {
-          this.dustbinData.push(selItems[i].id)
+          _this.dustbinData.push(selItems[i].id)
         }
-        this.deleteToDustBin(selItems[0].state)
+        _this.deleteToDustBin(_this.state)
       },
       //翻页
       currentChange(currentPage){
@@ -137,7 +137,7 @@
       },
       loadBlogs(page, count){
         let _this = this;
-        getRequest("/cms/all", {"keywords":this.keywords, "pageNum":page, "pageSize":count}).then(resp=> {
+        getRequest("/cms/all", {"keywords":this.keywords, "state": _this.state, "pageNum":page, "pageSize":count}).then(resp=> {
           _this.loading = false;
           if (resp.status == 200) {
             _this.cmss = resp.data.data.list;
@@ -166,7 +166,7 @@
       },
       handleDelete(index, row) {
         this.dustbinData.push(row.id);
-        this.deleteToDustBin(row.state);
+        this.deleteToDustBin(this.state);
       },
       handleRestore(index, row) {
         let _this = this;
@@ -176,7 +176,7 @@
           type: 'warning'
         } ).then(() => {
           _this.loading = true;
-          putRequest('/article/restore', {articleId: row.id}).then(resp=> {
+          putRequest('/admin/cms/' + row.id).then(resp=> {
             if (resp.status == 200) {
               var data = resp.data;
               _this.$message({type: data.status, message: data.msg});
@@ -193,6 +193,7 @@
             type: 'info',
             message: '已取消还原'
           });
+          _this.loading = false;
         });
       },
       deleteToDustBin(state){
@@ -203,13 +204,8 @@
           type: 'warning'
         }).then(() => {
           _this.loading = true;
-          var url = '';
-          if (_this.state == -2) {
-            url = "/admin/article/dustbin";
-          } else {
-            url = "/article/dustbin";
-          }
-          putRequest(url, {aids: _this.dustbinData, state: state}).then(resp=> {
+          var url = "/admin/cms/batch";
+          putRequest(url, {ids: _this.dustbinData, state: state}).then(resp=> {
             if (resp.status == 200) {
               var data = resp.data;
               _this.$message({type: data.status, message: data.msg});
@@ -217,13 +213,13 @@
                 window.bus.$emit('blogTableReload')//通过选项卡都重新加载数据
               }
             } else {
-              _this.$message({type: 'error', message: '删除失败!'});
+              _this.$message({type: 'error', message: data.msg});
             }
             _this.loading = false;
             _this.dustbinData = []
           }, resp=> {
             _this.loading = false;
-            _this.$message({type: 'error', message: '删除失败!'});
+            _this.$message({type: 'error', message:data.msg});
             _this.dustbinData = []
           });
         }).catch(() => {
@@ -231,7 +227,8 @@
             type: 'info',
             message: '已取消删除'
           });
-          _this.dustbinData = []
+          _this.dustbinData = [];
+          _this.loading = false;
         });
       }
     },

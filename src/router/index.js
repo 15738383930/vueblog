@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Login from '@/components/Login'
 import Home from '@/components/Home'
 import ArticleList from '@/components/ArticleList'
+import ArticleType from '@/components/ArticleType'
 import CateMana from '@/components/CateMana'
 import DataCharts from '@/components/DataCharts'
 import PostArticle from '@/components/PostArticle'
@@ -40,6 +41,13 @@ export default new Router({
           path: '/postArticle',
           name: '发表文章',
           component: PostArticle,
+          meta: {
+            keepAlive: false
+          }
+        }, {
+          path: '/articleType',
+          name: '分类管理',
+          component: ArticleType,
           meta: {
             keepAlive: false
           }

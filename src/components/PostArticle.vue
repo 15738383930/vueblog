@@ -11,18 +11,19 @@
       </el-input>
       <el-button type="primary" @click="saveBlog()">发表文章</el-button>
     </el-header>
-    <div style="padding-top: 5px;background-color: #ECECEC;">
+    <div style="padding-top: 5px;background-color: #ECECEC;height: 165px">
       <div style="width:100%;float: left;padding-left: 5px;display:flex;align-items:center;">
         <el-tag style="float: left;">图片：</el-tag>
         <el-upload style="float: left;padding-left: 5px;":class="{hide:hideUpload}" action="string"
                    list-type="picture-card"
-                   :file-list="imageUrls"
+                   :file-list="imageFiles"
                    :on-preview="handlePictureCardPreview"
                    :on-change="uploadChange"
                    :http-request="cmsUploadImage"
+                   :before-remove="beforeRemove"
                    :on-remove="cmsRemoveImage"
         >
-          <i class="el-icon-plus"></i>
+          <i slot="default" class="el-icon-plus"></i>
         </el-upload>
         <el-dialog style="float: left;" :visible.sync="dialogVisible">
           <img width="100%" :src="dialogImageUrl" alt="">
@@ -51,7 +52,7 @@
             :before-upload="beforeUpload"
             :http-request="uploadImage"
             :show-file-list="false"
-            style="height: 0px;">
+            >
           </el-upload>
           <div id="quill-editor" ref="quill-editor"></div>
           <!-- quill字数统计 -->
@@ -68,10 +69,10 @@
   </el-container>
 </template>
 <script>
-  import {base, postRequest, putRequest, uploadFileRequest} from '../utils/api'
+  import {postRequestJson, putRequestJson, uploadFileRequest} from '../utils/api'
   import {getRequest} from '../utils/api'
   // Local Registration
-  import {formatDate, isNotNullORBlank} from '../utils/utils'
+  import {isNotNullORBlank} from '../utils/utils'
 
   import Quill from 'quill'
   import ImageResize from 'quill-image-resize-module'
@@ -89,12 +90,14 @@
         this.loading = true;
         getRequest("/cms/" + query.id).then(resp=> {
           _this.loading = false;
-          console.log("resp========", resp)
           if (resp.status == 200) {
             _this.cmsDetail = resp.data.data.cmsDetail;
-            _this.imageUrls = resp.data.data.imag;
-              console.log("cmsDetail========", _this.cmsDetail)
-              console.log("imageUrls========", _this.imageUrls)
+            _this.imageUrls = resp.data.data.imageUrls;
+            if(_this.imageUrls && _this.imageUrls.length > 0){
+              for (let i = 0; i < _this.imageUrls.length; i++) {
+                _this.imageFiles.push({"url": _this.imageUrls[i]});
+              }
+            }
             // 获取富文本内容
             document.querySelector('#quill-editor').children[0].innerHTML = _this.cmsDetail.contentHtml
           } else {
@@ -120,9 +123,7 @@
         let _this = this;
         _this.loading = true;
         if(_this.cmsDetail.id && _this.cmsDetail.id > 0){
-          putRequest("/cms/", {
-              cmsDetail: _this.cmsDetail,
-              imageUrls: _this.imageUrls}, "JSON").then(resp=> {
+          putRequestJson("/cms/", {cmsDetail: _this.cmsDetail, imageUrls: _this.imageUrls}).then(resp=> {
             _this.loading = false;
             if (resp.status == 200 && resp.data.status == 'success') {
               _this.$message({type: 'success', message: resp.data.msg});
@@ -134,8 +135,8 @@
             _this.$message({type: 'error', message: resp.data.msg});
           })
         } else {
-            _this.cmsDetail.id = null;
-          postRequest("/cms/", {cmsDetail: _this.cmsDetail, imageUrls: _this.imageUrls}).then(resp=> {
+          _this.cmsDetail.id = null;
+          postRequestJson("/cms/", {cmsDetail: _this.cmsDetail, imageUrls: _this.imageUrls}).then(resp=> {
             _this.loading = false;
             if (resp.status == 200 && resp.data.status == 'success') {
               _this.$message({type: 'success', message: resp.data.msg});
@@ -273,41 +274,62 @@
       // 文章图片上传
       cmsUploadImage(param){
         let _this = this;
-          let fd = new FormData();
-          fd.append('file', param.file); // 要提交给后台的文件
-          uploadFileRequest("/admin/cms/upload", fd).then(resp => { // UploadFiles 是封装的接口
-              /**
-               * 如果上传成功
-               * ps：不同的上传接口，判断是否成功的标志也不一样，需要看后端的返回
-               * 通常情况下，应该有返回上传的结果状态（是否上传成功）
-               * 以及，图片上传成功后的路径
-               * 将路径赋值给 imgUrl
-               */
-              if(resp.data.data) {
-                  // 上传后的服务器图片路径
-                  let imgUrl = resp.data.data;
-                  _this.imageUrls.push(imgUrl);
-              } else {
-                  // 提示信息，需引入Message
-                  _this.$message.error(resp.data.msg)
-              }
-          })
+        let fd = new FormData();
+        fd.append('file', param.file); // 要提交给后台的文件
+        _this.loading = true;
+        uploadFileRequest("/admin/cms/upload", fd).then(resp => { // UploadFiles 是封装的接口
+            /**
+             * 如果上传成功
+             * ps：不同的上传接口，判断是否成功的标志也不一样，需要看后端的返回
+             * 通常情况下，应该有返回上传的结果状态（是否上传成功）
+             * 以及，图片上传成功后的路径
+             * 将路径赋值给 imgUrl
+             */
+            if(resp.data.data) {
+                // 上传后的服务器图片路径
+                let imgUrl = resp.data.data;
+                _this.imageUrls.push(imgUrl);
+                _this.imageFiles.push({"url": imgUrl});
+            } else {
+                // 提示信息，需引入Message
+                _this.$message.error(resp.data.msg)
+            }
+        })
+        setTimeout(function () {
+          _this.loading = false;
+        }, 1000)
       },
 
+      beforeRemove(file, fileList){
+        if (confirm('图片删除后不可恢复，确定删除吗?')) {
+          let _this = this;
+          _this.loading = true;
+          return true;
+        } else {
+          return false;
+        }
+      },
       // 文章图片删除
       cmsRemoveImage(file, fileList){
-          let _this = this;
-          getRequest("/admin/cms/remove/" + file.name).then(resp => { // UploadFiles 是封装的接口
-              if(resp.data.status === 200) {
-                  _this.imageUrls = fileList.length === 0 ? [] : fileList.forEach(item => { _this.imageUrls.push(item.url); });
-                  this.hideUpload = fileList.length >= this.limitCount;
-              } else {
-                  // 提示信息，需引入Message
-                  _this.$message.error(resp.data.msg)
-              }
-          })
+        let _this = this;
+        getRequest("/admin/cms/remove?imageUrl=" + file.url).then(resp => {
+          if(resp.data.status === 200) {
+            _this.imageFiles = [];
+            _this.imageUrls = [];
+            fileList.forEach(item => {
+              _this.imageUrls.push(item.url);
+              _this.imageFiles.push({"url": item.url});
+            });
+            _this.hideUpload = fileList.length >= this.limitCount;
+          } else {
+            // 提示信息，需引入Message
+            _this.$message.error(resp.data.msg)
+          }
+        })
+        setTimeout(function () {
+          _this.loading = false;
+        }, 1500)
       },
-
       uploadChange(file, fileList){
         this.hideUpload = fileList.length >= this.limitCount;
       }
@@ -315,8 +337,6 @@
     data() {
       return {
         options: [],
-        cmsTypeParents: [],
-        cmsTypeChilds: [],
         editId: '',
         // cms类型父id
         parentId: '',
@@ -332,6 +352,7 @@
             cmsTypeId: -1
         },
         imageUrls: [],
+        imageFiles:[],
         defaultParams: {
           label: 'name',
           value: 'id',
