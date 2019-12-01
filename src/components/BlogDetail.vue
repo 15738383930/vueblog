@@ -42,7 +42,6 @@
       getRequest("/cms/" + id).then(resp=> {
         if (resp.status == 200) {
           _this.cms = resp.data.data.cmsDetail;
-          console.log("cms----------", _this.cms)
         }
         _this.loading = false;
       }, resp=> {

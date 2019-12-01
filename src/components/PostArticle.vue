@@ -342,14 +342,14 @@
         parentId: '',
         loading: false,
         cmsDetail: {
-            id: -1,
+            id: '',
             title: '',
             remark: '',
             releaseDate: '',
             articleSource: '',
             contentHtml: '',
             imgUrls: '',
-            cmsTypeId: -1
+            cmsTypeId: ''
         },
         imageUrls: [],
         imageFiles:[],

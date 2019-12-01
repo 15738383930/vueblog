@@ -11,14 +11,15 @@
                :expand-on-click-node="false"
                :render-content="renderContent"
                :default-expanded-keys="defaultExpandKeys"
-               @node-click="handleNodeClick"></el-tree>
+               ></el-tree>
+<!--      @node-click="handleNodeClick"-->
     </div>
   </div>
 </template>
 <!-- VUE饿了么树形控件添加增删改功能按钮 -->
 <script>
   import TreeRender from './ArticleTypeTreeRender'
-  import {getRequest} from "../utils/api";
+  import {deleteRequest, getRequest} from "../utils/api";
 
   let id = 1000;
 
@@ -34,7 +35,6 @@
           label: 'name',
           id: 'id',
           children: 'children',
-          emitPath: false
         },
         defaultExpandKeys: [],//默认展开节点列表
       }
@@ -58,7 +58,9 @@
       getCategories(){
         let _this = this;
         getRequest("/admin/cms/cascader").then(resp=> {
-          _this.setTree = JSON.parse(JSON.stringify(resp.data.data));
+            if(resp.data){
+                _this.setTree = JSON.parse(JSON.stringify(resp.data.data));
+            }
         });
       },
       renderContent(h,{node,data,store}){//加载节点
@@ -79,25 +81,24 @@
       },
       handleAddTop(){
         this.setTree.push({
-          id: ++this.maxexpandId,
-          name: '新增节点',
-          pid: '',
-          isEdit: false,
+          id: '',
+          name: '',
+          parentId: '',
+          isEdit: true,
           children: []
         })
       },
       handleAdd(s,d,n){//增加节点
-        console.log("d=========", d)
         if(n.level >=2){
           this.$message.error("最多只支持两级！")
           return false;
         }
         //添加数据
         d.children.push({
-          id: ++this.maxexpandId,
-          name: '新增节点',
-          pid: d.id,
-          isEdit: false,
+          id: '',
+          name: '',
+          parentId: d.id,
+          isEdit: true,
           children: []
         });
         //展开节点
@@ -106,10 +107,8 @@
         }
       },
       handleEdit(s,d,n){//编辑节点
-        console.log(s,d,n)
       },
       handleDelete(s,d,n){//删除节点
-        console.log(s,d,n)
         let that = this;
         //有子级不删除
         if(d.children && d.children.length !== 0){
@@ -118,34 +117,40 @@
         }else{
           //新增节点直接删除，否则要询问是否删除
           let delNode = () => {
-            let list = n.parent.data.children || n.parent.data,//节点同级数据
-              _index = 99999;//要删除的index
-            /*if(!n.parent.data.children){//删除顶级节点，无children
-              list = n.parent.data
-            }*/
-            list.map((c,i) => {
-              if(d.id == c.id){
-                _index = i;
-              }
-            })
-            let k = list.splice(_index,1);
-            //console.log(_index,k)
-            this.$message.success("删除成功！")
-          }
+              let list = n.parent.data.children || n.parent.data,//节点同级数据
+                  _index = 99999;//要删除的index
+              /*if(!n.parent.data.children){//删除顶级节点，无children
+                list = n.parent.data
+              }*/
+              list.map((c,i) => {
+                  if(d.id === c.id){
+                      _index = i;
+                  }
+              })
+              let k = list.splice(_index,1);
+              this.$message.success("删除成功！")
+          };
           let isDel = () => {
             that.$confirm("是否删除此节点？","提示",{
               confirmButtonText: "确认",
               cancelButtonText: "取消",
               type: "warning"
             }).then(() => {
-              delNode()
+                deleteRequest("/admin/cms/cmsType/" + d.id).then(resp=> {
+                    if (resp.status === 200 && resp.data.status === 200) {
+                        delNode();
+                    }else{
+                        this.$message({type: 'error', message: resp.data.msg});
+                    }
+                }, resp=> {
+                    this.$message({type: 'error', message: resp.data.msg});
+                })
             }).catch(() => {
               return false;
             })
           }
           //判断是否新增
-          d.id > this.non_maxexpandId ? delNode() : isDel()
-
+          !d.id ? delNode() : isDel()
         }
       },
     }

@@ -73,6 +73,7 @@ export default new Router({
       path: '/home',
       component: Home,
       name: '用户管理',
+      hidden: true,
       children: [
         {
           path: '/user',
@@ -85,6 +86,7 @@ export default new Router({
       path: '/home',
       component: Home,
       name: '栏目管理',
+      hidden: true,
       children: [
         {
           path: '/cateMana',
@@ -97,6 +99,7 @@ export default new Router({
       path: '/home',
       component: Home,
       name: '数据统计',
+      hidden: true,
       iconCls: 'fa fa-bar-chart',
       children: [
         {
