@@ -32,7 +32,7 @@
     mounted: function () {
       var _this = this;
       getRequest("/currentUserEmail").then(resp=> {
-        if (resp.status == 200) {
+        if (resp && resp.status == 200) {
           _this.emailValidateForm.email = resp.data;
         }
       });
@@ -45,7 +45,7 @@
             _this.loading = true;
             putRequest("/updateUserEmail", {email: _this.emailValidateForm.email}).then(resp=> {
               _this.loading = false;
-              if (resp.status == 200) {
+              if (resp && resp.status == 200) {
                 _this.$message({type: resp.data.status, message: resp.data.msg});
               } else {
                 _this.$message({type: 'error', message: '开启失败!'});

@@ -139,23 +139,10 @@
         let _this = this;
         getRequest("/cms/all", {"keywords":this.keywords, "state": _this.state, "pageNum":page, "pageSize":count}).then(resp=> {
           _this.loading = false;
-          if (resp.status == 200) {
+          if (resp && resp.status == 200) {
             _this.cmss = resp.data.data.list;
             _this.totalCount = resp.data.data.total;
-          } else {
-            _this.$message({type: 'error', message: '数据加载失败!'});
           }
-        }, resp=> {
-          _this.loading = false;
-          if (resp.response.status == 403) {
-            _this.$message({type: 'error', message: resp.response.data});
-          } else {
-            _this.$message({type: 'error', message: '数据加载失败!'});
-          }
-        }).catch(resp=> {
-          //压根没见到服务器
-          _this.loading = false;
-          _this.$message({type: 'error', message: '数据加载失败!'});
         })
       },
       handleSelectionChange(val) {
@@ -177,24 +164,14 @@
         } ).then(() => {
           _this.loading = true;
           putRequest('/admin/cms/' + row.id).then(resp=> {
-            if (resp.status == 200) {
-              var data = resp.data;
-              _this.$message({type: data.status, message: data.msg});
-              if (data.status == 'success') {
-                window.bus.$emit('blogTableReload')//通过选项卡都重新加载数据
-              }
+            if (resp && resp.status == 200 && resp.data.status == 'success') {
+              window.bus.$emit('blogTableReload')//通过选项卡都重新加载数据
             } else {
               _this.$message({type: 'error', message: '还原失败!'});
             }
             _this.loading = false;
           });
-        }).catch(() => {
-          _this.$message({
-            type: 'info',
-            message: '已取消还原'
-          });
-          _this.loading = false;
-        });
+        })
       },
       deleteToDustBin(state){
         var _this = this;
@@ -204,22 +181,14 @@
           type: 'warning'
         }).then(() => {
           _this.loading = true;
-          var url = "/admin/cms/batch";
-          putRequest(url, {ids: _this.dustbinData, state: state}).then(resp=> {
-            if (resp.status == 200) {
-              var data = resp.data;
-              _this.$message({type: data.status, message: data.msg});
-              if (data.status == 'success') {
-                window.bus.$emit('blogTableReload')//通过选项卡都重新加载数据
-              }
-            } else {
-              _this.$message({type: 'error', message: data.msg});
+          putRequest("/admin/cms/batch", {ids: _this.dustbinData, state: state}).then(resp=> {
+            if (resp && resp.status == 200 && resp.data.status == 'success') {
+              window.bus.$emit('blogTableReload')//通过选项卡都重新加载数据
             }
             _this.loading = false;
             _this.dustbinData = []
           }, resp=> {
             _this.loading = false;
-            _this.$message({type: 'error', message:data.msg});
             _this.dustbinData = []
           });
         }).catch(() => {

@@ -46,47 +46,38 @@
       //编辑完成
       nodeEditPass(s,d,n){
           let _this = this;
+
           let dd = JSON.parse(JSON.stringify(d));
           dd.children = [];
           _this.loading = true;
           if(d.name){
               getRequest('/cms/cmsType/isItUnique', dd).then(resp=> {
-                  if (resp.status === 200 && resp.data.status === 200) {
+                  if (resp && resp.status === 200 && resp.data.status === 200) {
                       if(d.id && d.id > 0){
                           putRequestJson('/admin/cms/cmsType', dd).then(resp=> {
                               _this.loading = false;
                               if (resp.status === 200 && resp.data.status === 'success') {
-                                  _this.$message({type: 'success', message: resp.data.msg});
                                   d.isEdit = false;
-                              }else{
-                                  _this.$message({type: 'error', message: resp.data.msg});
                               }
                           }, resp=> {
                               _this.loading = false;
-                              _this.$message({type: 'error', message: resp.data.msg});
                           })
                       }else{
                           postRequest('/admin/cms/cmsType', dd).then(resp=> {
                               _this.loading = false;
                               if (resp.status === 200 && resp.data.status === 200) {
                                   d.id = resp.data.data;
-                                  _this.$message({type: 'success', message: resp.data.msg});
                                   d.isEdit = false;
-                              }else{
-                                  _this.$message({type: 'error', message: resp.data.msg});
                               }
                           }, resp=> {
                               _this.loading = false;
-                              _this.$message({type: 'error', message: resp.data.msg});
                           })
                       }
                   }else{
                       _this.loading = false;
-                      _this.$message({type: 'error', message: resp.data.msg});
                   }
               }, resp=> {
                   _this.loading = false;
-                  _this.$message({type: 'error', message: resp.data.msg});
               })
           }else{
               _this.loading = false;

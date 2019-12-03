@@ -20,7 +20,7 @@
     mounted: function () {
       var _this = this;
       getRequest("/isAdmin").then(resp=> {
-        if (resp.status == 200) {
+        if (resp && resp.status == 200) {
           _this.isAdmin = resp.data;
         }
       })

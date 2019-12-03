@@ -41,7 +41,7 @@
           password: this.loginForm.password
         }).then(resp=> {
           _this.loading = false;
-          if (resp.status == 200) {
+          if (resp && resp.status == 200) {
             //成功
             var json = resp.data;
             if (json.status == 'success') {

@@ -11,11 +11,14 @@ axios.interceptors.request.use(config => {
 axios.interceptors.response.use(data => {
   if (data.status && data.status === 200 && data.data.status === 500) {
     Message.error({message: data.data.msg});
+  } else if (data.status && data.status === 200 && data.data.status === 401) {
+    Message.error({message: data.data.msg});
     router.push({path: '/'});
-    return false;
-  }
-  if (data.data.msg) {
-    Message.success({message: data.data.msg});
+    return;
+  } else {
+    if (data.data.msg && data.data.msg !== 'success') {
+      Message.success({message: data.data.msg});
+    }
   }
   return data;
 }, err => {
@@ -28,14 +31,14 @@ axios.interceptors.response.use(data => {
   } else {
     if (err.response.data.msg) {
       Message.error({message: err.response.data.msg});
-    }else{
+    } else {
       Message.error({message: '未知错误!'});
     }
   }
 });
 
 
-let base = '';
+let base = '/blog';
 export const postRequest = (url, params) => {
   return axios({
     method: 'post',
@@ -110,10 +113,10 @@ export const deleteRequest = (url) => {
     url: `${base}${url}`
   });
 }
-export const getRequest = (url,params) => {
+export const getRequest = (url, params) => {
   return axios({
     method: 'get',
-    params:params,
+    params: params,
     transformRequest: [function (data) {
       let ret = ''
       for (let it in data) {

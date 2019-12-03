@@ -127,7 +127,7 @@
                       _index = i;
                   }
               })
-              let k = list.splice(_index,1);
+              let k = list.splice(_index, 1);
               this.$message.success("删除成功！")
           };
           let isDel = () => {
@@ -139,11 +139,7 @@
                 deleteRequest("/admin/cms/cmsType/" + d.id).then(resp=> {
                     if (resp.status === 200 && resp.data.status === 200) {
                         delNode();
-                    }else{
-                        this.$message({type: 'error', message: resp.data.msg});
                     }
-                }, resp=> {
-                    this.$message({type: 'error', message: resp.data.msg});
                 })
             }).catch(() => {
               return false;

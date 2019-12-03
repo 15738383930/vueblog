@@ -90,7 +90,7 @@
         this.loading = true;
         getRequest("/cms/" + query.id).then(resp=> {
           _this.loading = false;
-          if (resp.status == 200) {
+          if (resp && resp.status == 200) {
             _this.cmsDetail = resp.data.data.cmsDetail;
             _this.imageUrls = resp.data.data.imageUrls;
             if(_this.imageUrls && _this.imageUrls.length > 0){
@@ -125,27 +125,23 @@
         if(_this.cmsDetail.id && _this.cmsDetail.id > 0){
           putRequestJson("/cms/", {cmsDetail: _this.cmsDetail, imageUrls: _this.imageUrls}).then(resp=> {
             _this.loading = false;
-            if (resp.status == 200 && resp.data.status == 'success') {
-              _this.$message({type: 'success', message: resp.data.msg});
+            if (resp && resp.status == 200 && resp.data.status == 'success') {
               window.bus.$emit('blogTableReload')
               _this.$router.replace({path: '/articleList'});
             }
           }, resp=> {
             _this.loading = false;
-            _this.$message({type: 'error', message: resp.data.msg});
           })
         } else {
           _this.cmsDetail.id = null;
           postRequestJson("/cms/", {cmsDetail: _this.cmsDetail, imageUrls: _this.imageUrls}).then(resp=> {
             _this.loading = false;
-            if (resp.status == 200 && resp.data.status == 'success') {
-              _this.$message({type: 'success', message: resp.data.msg});
+            if (resp && resp.status == 200 && resp.data.status == 'success') {
               window.bus.$emit('blogTableReload')
               _this.$router.replace({path: '/articleList'});
             }
           }, resp=> {
             _this.loading = false;
-            _this.$message({type: 'error', message: resp.data.msg});
           })
         }
       },
@@ -264,9 +260,6 @@
             this.quill.insertEmbed(length, 'image', imgUrl);
             // 调整光标到最后
             this.quill.setSelection(length + 1)
-          } else {
-            // 提示信息，需引入Message
-            this.$message.error(resp.data.msg)
           }
         })
       },
@@ -290,9 +283,6 @@
                 let imgUrl = resp.data.data;
                 _this.imageUrls.push(imgUrl);
                 _this.imageFiles.push({"url": imgUrl});
-            } else {
-                // 提示信息，需引入Message
-                _this.$message.error(resp.data.msg)
             }
         })
         setTimeout(function () {
@@ -321,9 +311,6 @@
               _this.imageFiles.push({"url": item.url});
             });
             _this.hideUpload = fileList.length >= this.limitCount;
-          } else {
-            // 提示信息，需引入Message
-            _this.$message.error(resp.data.msg)
           }
         })
         setTimeout(function () {

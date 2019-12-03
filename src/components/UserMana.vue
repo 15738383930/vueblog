@@ -108,7 +108,7 @@
         var _this = this;
         _this.cardloading.splice(index, 1, true)
         putRequest("/admin/user/role", {rids: this.roles, id: id}).then(resp=> {
-          if (resp.status == 200 && resp.data.status == 'success') {
+          if (resp && resp.status == 200 && resp.data.status == 'success') {
             _this.$message({type: resp.data.status, message: resp.data.msg});
             _this.loadOneUserById(id, index);
           } else {
@@ -140,7 +140,7 @@
         }).then(() => {
           _this.loading = true;
           deleteRequest("/admin/user/" + id).then(resp=> {
-            if (resp.status == 200 && resp.data.status == 'success') {
+            if (resp && resp.status == 200 && resp.data.status == 'success') {
               _this.$message({type: 'success', message: '删除成功!'})
               _this.loadUserList();
               return;
@@ -179,7 +179,7 @@
         _this.eploading.splice(index, 1, true)
         getRequest("/admin/roles").then(resp=> {
           _this.eploading.splice(index, 1, false)
-          if (resp.status == 200) {
+          if (resp && resp.status == 200) {
             _this.allRoles = resp.data;
           } else {
             _this.$message({type: 'error', message: '数据加载失败!'});
@@ -196,7 +196,7 @@
         var _this = this;
         getRequest("/admin/user/" + id).then(resp=> {
           _this.cardloading.splice(index, 1, false)
-          if (resp.status == 200) {
+          if (resp && resp.status == 200) {
             _this.users.splice(index, 1, resp.data);
           } else {
             _this.$message({type: 'error', message: '数据加载失败!'});
@@ -213,7 +213,7 @@
         var _this = this;
         getRequest("/admin/user?nickname="+this.keywords).then(resp=> {
           _this.loading = false;
-          if (resp.status == 200) {
+          if (resp && resp.status == 200) {
             _this.users = resp.data;
           } else {
             _this.$message({type: 'error', message: '数据加载失败!'});

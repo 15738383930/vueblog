@@ -84,7 +84,9 @@
       });*/
       var _this = this;
       getRequest("/currentUserName").then(function (msg) {
-        _this.currentUserName = msg.data;
+        if(msg){
+          _this.currentUserName = msg.data;
+        }
       }, function (msg) {
         _this.currentUserName = '游客';
       });

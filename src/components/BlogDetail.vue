@@ -40,13 +40,10 @@
       let _this = this;
       this.loading = true;
       getRequest("/cms/" + id).then(resp=> {
-        if (resp.status == 200) {
+        if (resp && resp.status == 200) {
           _this.cms = resp.data.data.cmsDetail;
         }
         _this.loading = false;
-      }, resp=> {
-        _this.loading = false;
-        _this.$message({type: 'error', message: '页面加载失败!'});
       });
     },
     data(){
