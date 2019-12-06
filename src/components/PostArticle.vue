@@ -270,7 +270,7 @@
         let fd = new FormData();
         fd.append('file', param.file); // 要提交给后台的文件
         _this.loading = true;
-        uploadFileRequest("/admin/cms/upload", fd).then(resp => { // UploadFiles 是封装的接口
+        uploadFileRequest("/admin/cms/upload/" + this.cmsDetail.id, fd).then(resp => { // UploadFiles 是封装的接口
             /**
              * 如果上传成功
              * ps：不同的上传接口，判断是否成功的标志也不一样，需要看后端的返回
@@ -302,7 +302,7 @@
       // 文章图片删除
       cmsRemoveImage(file, fileList){
         let _this = this;
-        getRequest("/admin/cms/remove?imageUrl=" + file.url).then(resp => {
+        getRequest("/admin/cms/remove/" + this.cmsDetail.id, {"imageUrl": file.url}).then(resp => {
           if(resp.data.status === 200) {
             _this.imageFiles = [];
             _this.imageUrls = [];

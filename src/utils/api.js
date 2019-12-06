@@ -24,6 +24,7 @@ axios.interceptors.response.use(data => {
 }, err => {
   if (!err.response || err.response.status === 504 || err.response.status === 404) {
     Message.error({message: '服务器被吃了⊙﹏⊙∥'});
+    router.push({path: '/'});
   } else if (err.response.status === 403) {
     Message.error({message: '权限不足,请联系管理员!'});
   } else if (err.response.status === 401) {
