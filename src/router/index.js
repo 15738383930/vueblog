@@ -4,8 +4,6 @@ import Login from '@/components/Login'
 import Home from '@/components/Home'
 import ArticleList from '@/components/ArticleList'
 import ArticleType from '@/components/ArticleType'
-import CateMana from '@/components/CateMana'
-import DataCharts from '@/components/DataCharts'
 import PostArticle from '@/components/PostArticle'
 import UserMana from '@/components/UserMana'
 import BlogDetail from '@/components/BlogDetail'
@@ -85,33 +83,6 @@ export default new Router({
           iconCls: 'fa fa-user-o',
           name: '用户管理',
           component: UserMana
-        }
-      ]
-    }, {
-      path: '/home',
-      component: Home,
-      name: '栏目管理',
-      hidden: true,
-      children: [
-        {
-          path: '/cateMana',
-          iconCls: 'fa fa-reorder',
-          name: '栏目管理',
-          component: CateMana
-        }
-      ]
-    }, {
-      path: '/home',
-      component: Home,
-      name: '数据统计',
-      hidden: true,
-      iconCls: 'fa fa-bar-chart',
-      children: [
-        {
-          path: '/charts',
-          iconCls: 'fa fa-bar-chart',
-          name: '数据统计',
-          component: DataCharts
         }
       ]
     }

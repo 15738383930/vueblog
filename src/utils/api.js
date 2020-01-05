@@ -16,8 +16,12 @@ axios.interceptors.response.use(data => {
     router.push({path: '/'});
     return;
   } else {
-    if (data.data.msg && data.data.msg !== 'success') {
-      Message.success({message: data.data.msg});
+    if (data.data.status === 'success' || data.data.status === 200) {
+      if(data.data.msg !== 'success'){
+        Message.success({message: data.data.msg});
+      }
+    } else if (data.data.status === 'error') {
+      Message.error({message: data.data.msg});
     }
   }
   return data;
