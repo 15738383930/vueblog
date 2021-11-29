@@ -13,7 +13,7 @@
     "axios": "^0.17.1",
     "element-ui": "^2.0.8",
     "font-awesome": "^4.7.0",
-    "mavon-editor": "^2.4.13",
+    "mavon-editor": "^2.8.2",
     "quill-image-drop-module": "^1.0.3",
     "quill-image-resize-module": "^3.0.0",
     "vue": "^2.5.2",
